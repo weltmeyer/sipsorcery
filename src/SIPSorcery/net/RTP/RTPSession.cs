@@ -2732,27 +2732,48 @@ namespace SIPSorcery.Net
         /// <returns>If a match could be found an SSRC the MediaStream otherwise null.</returns>
         private MediaStream GetMediaStream(RTCPCompoundPacket rtcpPkt)
         {
+            // Each of these is checked in turn rather than as an if/else chain. A compound packet
+            // regularly contains several of them at once - a Receiver Report followed by feedback
+            // reports is the normal shape - and an else-if meant the feedback was never looked at
+            // whenever a Receiver Report was present, which is precisely when it matters.
             if (rtcpPkt.SenderReport != null)
             {
-                return GetMediaStream(rtcpPkt.SenderReport.SSRC);
+                if (GetMediaStream(rtcpPkt.SenderReport.SSRC) is { } mediaStream)
+                {
+                    return mediaStream;
+                }
             }
-            else if (rtcpPkt.ReceiverReport is { } receiverReport)
+
+            if (rtcpPkt.ReceiverReport is { } receiverReport)
             {
                 if (GetMediaStream(receiverReport.SSRC) is { } mediaStream)
                 {
                     return mediaStream;
                 }
             }
-            else if (rtcpPkt.Feedback is { } feedback)
+
+            // Match on the stream the feedback is ABOUT (MediaSSRC) before the stream it came from
+            // (SenderSSRC): for a receive-only remote peer the sender SSRC belongs to the far end
+            // and matches nothing locally, while MediaSSRC names one of our own sending streams.
+            foreach (var feedback in rtcpPkt.Feedbacks)
             {
-                if (GetMediaStream(feedback.SenderSSRC) is { } mediaStream)
+                if (GetMediaStream(feedback.MediaSSRC) is { } mediaStream)
                 {
                     return mediaStream;
                 }
+
+                if (GetMediaStream(feedback.SenderSSRC) is { } senderMediaStream)
+                {
+                    return senderMediaStream;
+                }
             }
-            else if (rtcpPkt.TWCCFeedback != null)
+
+            if (rtcpPkt.TWCCFeedback != null)
             {
-                return GetMediaStream(rtcpPkt.TWCCFeedback.MediaSSRC);
+                if (GetMediaStream(rtcpPkt.TWCCFeedback.MediaSSRC) is { } mediaStream)
+                {
+                    return mediaStream;
+                }
             }
 
             // No match on SR/RR SSRC. Check the individual reception reports for a known SSRC.
