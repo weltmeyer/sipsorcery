@@ -1142,6 +1142,15 @@ namespace SIPSorcery.Net
                 logger.LogError("{Method} the remote candidate supplied to UpdateChecklist was null.", nameof(UpdateChecklist));
                 return;
             }
+            else if (base.IsClosed)
+            {
+                // The sockets are being torn down, so an entry added here could never be checked. This is
+                // reachable in normal operation: the method runs fire and forget, so a STUN answer that
+                // arrives after the peer connection closed still drives it. Silent, because a viewer
+                // leaving is not a fault.
+                logger.LogDebug("{Method} ignoring a candidate pair for a closed RTP ICE channel.", nameof(UpdateChecklist));
+                return;
+            }
 
             // This method is called in a fire and forget fashion so any exceptions need to be handled here.
             try

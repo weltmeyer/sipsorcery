@@ -263,5 +263,34 @@ namespace SIPSorcery.Net.UnitTests
 
             logger.LogDebug("Test complete.");
         }
+
+        /// <summary>
+        /// Tests that IsDualMode can be read after the channel has been closed.
+        /// </summary>
+        /// <remarks>
+        /// It used to throw: the getter only checked RtpSocket for null, and Socket.DualMode issues a
+        /// getsockopt that fails with ObjectDisposedException once the socket is gone. Callers do read it
+        /// during teardown - RtpIceChannel.UpdateChecklist runs fire and forget, so a STUN answer arriving
+        /// after the peer connection closed still drives it - and the exception cost a candidate pair.
+        /// </remarks>
+        [Fact]
+        public void RtpChannelIsDualModeAfterCloseUnitTest()
+        {
+            logger.LogDebug("--> {MethodName}", TestHelper.GetCurrentMethodName());
+            logger.BeginScope(TestHelper.GetCurrentMethodName());
+
+            RTPChannel channel = new RTPChannel(true, null);
+
+            // Reading it while open must not throw either, whatever the answer is on this host.
+            var whileOpen = channel.IsDualMode;
+            logger.LogDebug("IsDualMode while open: {WhileOpen}.", whileOpen);
+
+            channel.Close("normal");
+
+            Assert.True(channel.IsClosed, "The RTP channel did not report itself closed.");
+            Assert.False(channel.IsDualMode, "A closed RTP channel must report false rather than throw.");
+
+            logger.LogDebug("Test complete.");
+        }
     }
 }

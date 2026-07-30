@@ -106,16 +106,31 @@ public class RTPChannel : IDisposable
     /// Returns true if the RTP socket supports dual mode IPv4 and IPv6. If the control
     /// socket exists it will be the same.
     /// </summary>
+    /// <remarks>
+    /// Safe to read on a closed channel. Socket.AddressFamily returns a cached field and never throws,
+    /// but Socket.DualMode issues a getsockopt and throws ObjectDisposedException once the socket has
+    /// been disposed. Callers reach this during teardown - RtpIceChannel.UpdateChecklist runs fire and
+    /// forget, so a STUN answer can still drive it after the peer connection was closed - and losing a
+    /// candidate pair to an exception is worse than reporting "not dual mode" for a channel that is
+    /// going away.
+    /// </remarks>
     public bool IsDualMode
     {
         get
         {
-            if (RtpSocket != null && RtpSocket.AddressFamily == AddressFamily.InterNetworkV6)
+            if (m_isClosed || RtpSocket == null || RtpSocket.AddressFamily != AddressFamily.InterNetworkV6)
+            {
+                return false;
+            }
+
+            try
             {
                 return RtpSocket.DualMode;
             }
-            else
+            catch (ObjectDisposedException)
             {
+                // Close() sets m_isClosed before disposing the receivers, so the check above already
+                // covers ordinary teardown. This catches a socket disposed by any other path.
                 return false;
             }
         }
