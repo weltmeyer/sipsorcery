@@ -14,16 +14,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LanguageExt.Core" Version="4.4.9" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.7" />
+    <PackageReference Include="LanguageExt.Core" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
   </ItemGroup>
 
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Aaron Clauson</Authors>
     <Copyright>Copyright © 2025-2026 Aaron Clauson</Copyright>
-    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <Title>SIPSorcery</Title>
     <Summary>A .NET library for interacting with OpenAI's real-time WebRTC API.</Summary>
     <Description>A .NET library for interacting with OpenAI's real-time WebRTC API. It provides helper classes to negotiate peer connections, send and receive Opus audio frames and exchange control messages over a data channel. Not an official OpenAI package and no affiliation with OpenAI.
@@ -39,7 +39,8 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryBranch>main</RepositoryBranch>
     <PackageTags>OpenAI WebRTC SIPSorcery Real-time</PackageTags>
-    <PackageReleaseNotes>-v10.0.12: Updated for main sipsorcery library release.
+    <PackageReleaseNotes>-v10.0.13: Fix license file.
+-v10.0.12: Updated for main sipsorcery library release.
 -v10.0.11: Updated for main sipsorcery library release.
 -v10.0.10: Updated for main sipsorcery library release.
 -v10.0.9: Updated for main sipsorcery library release.
@@ -53,9 +54,9 @@
 -v8.0.1-pre: Initial version.
 </PackageReleaseNotes>
     <NeutralLanguage>en</NeutralLanguage>
-    <Version>10.0.12</Version>
-    <AssemblyVersion>10.0.12</AssemblyVersion>
-    <FileVersion>10.0.12</FileVersion>
+    <Version>10.0.13</Version>
+    <AssemblyVersion>10.0.13</AssemblyVersion>
+    <FileVersion>10.0.13</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Label="SourceLink">
@@ -74,6 +75,7 @@
   <ItemGroup>
     <None Include="icon.png" Pack="true" PackagePath="" />
 	<None Include="README.md" Pack="true" PackagePath="" />
+	<None Include="..\..\LICENSE.md" Pack="true" PackagePath="" />
   </ItemGroup>
   
   <ItemGroup>

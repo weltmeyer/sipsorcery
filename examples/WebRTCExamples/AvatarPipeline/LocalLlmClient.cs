@@ -26,7 +26,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -37,7 +36,7 @@ namespace demo;
 
 public class LocalLlmClient : ILlmClient
 {
-    private const string SYSTEM_PROMPT = LlmShared.SystemPrompt;
+    private readonly string _systemPrompt;
 
     private static readonly ILogger logger = SIPSorcery.LogFactory.CreateLogger<LocalLlmClient>();
 
@@ -53,10 +52,11 @@ public class LocalLlmClient : ILlmClient
 
     public string Description => $"endpoint {_endpoint} and model {_model}";
 
-    public LocalLlmClient(string endpoint, string model, string apiKey = null)
+    public LocalLlmClient(string endpoint, string model, string apiKey = null, string systemPrompt = null)
     {
         _endpoint = endpoint;
         _model = string.IsNullOrWhiteSpace(model) ? "llama3.2" : model;
+        _systemPrompt = string.IsNullOrWhiteSpace(systemPrompt) ? LlmShared.SystemPrompt : systemPrompt;
 
         // A key is only needed for hosted gateways (OpenRouter, OpenAI, ...). Local
         // servers like Ollama ignore it, so it is safe to leave unset for those.
@@ -88,15 +88,19 @@ public class LocalLlmClient : ILlmClient
                 Stream = false,
                 Messages = new[]
                 {
-                    new ChatMessage { Role = "system", Content = SYSTEM_PROMPT },
+                    new ChatMessage { Role = "system", Content = _systemPrompt },
                     new ChatMessage { Role = "user", Content = prompt }
                 }
             };
 
-            using var resp = await _http.PostAsJsonAsync(_endpoint, request).ConfigureAwait(false);
+            // Plain JsonSerializer + StringContent, not PostAsJsonAsync/ReadFromJsonAsync -
+            // see the comment in ReadDeltasAsync on the System.Net.Http.Json version skew.
+            var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+            using var resp = await _http.PostAsync(_endpoint, content).ConfigureAwait(false);
             resp.EnsureSuccessStatusCode();
 
-            var completion = await resp.Content.ReadFromJsonAsync<ChatResponse>().ConfigureAwait(false);
+            var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var completion = JsonSerializer.Deserialize<ChatResponse>(body);
             var reply = completion?.Choices is { Length: > 0 } ? completion.Choices[0].Message?.Content : null;
 
             return string.IsNullOrWhiteSpace(reply) ? prompt : reply.Trim();
@@ -162,18 +166,23 @@ public class LocalLlmClient : ILlmClient
     /// </summary>
     private async IAsyncEnumerable<string> ReadDeltasAsync(string prompt)
     {
+        // JsonContent.Create's generic overload resolves to a runtime System.Net.Http.Json
+        // build that doesn't exist in every host (missing under Godot's bundled .NET, throwing
+        // MissingMethodException at the call site) - JsonSerializer + StringContent is stable
+        // API surface since .NET Core 3.0 and avoids the mismatch entirely.
+        var chatRequest = new ChatRequest
+        {
+            Model = _model,
+            Stream = true,
+            Messages = new[]
+            {
+                new ChatMessage { Role = "system", Content = _systemPrompt },
+                new ChatMessage { Role = "user", Content = prompt }
+            }
+        };
         var request = new HttpRequestMessage(HttpMethod.Post, _endpoint)
         {
-            Content = JsonContent.Create(new ChatRequest
-            {
-                Model = _model,
-                Stream = true,
-                Messages = new[]
-                {
-                    new ChatMessage { Role = "system", Content = SYSTEM_PROMPT },
-                    new ChatMessage { Role = "user", Content = prompt }
-                }
-            })
+            Content = new StringContent(JsonSerializer.Serialize(chatRequest), Encoding.UTF8, "application/json")
         };
 
         HttpResponseMessage resp = null;
