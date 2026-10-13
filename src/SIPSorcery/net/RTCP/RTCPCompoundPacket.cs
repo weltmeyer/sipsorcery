@@ -112,7 +112,12 @@ namespace SIPSorcery.Net
                             break;
                         case (byte)RTCPReportTypesEnum.SDES:
                             SDesReport = new RTCPSDesReport(buffer);
-                            int sdesLength = (SDesReport != null) ? SDesReport.GetBytes().Length : Int32.MaxValue;
+                            int sdesLength = (SDesReport.Header.Length + 1) * 4;
+                            if (sdesLength < RTCPHeader.HEADER_BYTES_LENGTH ||
+                                sdesLength > packet.Length - offset)
+                            {
+                                return;
+                            }
                             offset += sdesLength;
                             break;
                         case (byte)RTCPReportTypesEnum.BYE:
@@ -277,7 +282,13 @@ namespace SIPSorcery.Net
                             break;
                         case (byte)RTCPReportTypesEnum.SDES:
                             rtcpCompoundPacket.SDesReport = new RTCPSDesReport(buffer);
-                            int sdesLength = (rtcpCompoundPacket.SDesReport != null) ? rtcpCompoundPacket.SDesReport.GetBytes().Length : Int32.MaxValue;
+                            int sdesLength = (rtcpCompoundPacket.SDesReport.Header.Length + 1) * 4;
+                            if (sdesLength < RTCPHeader.HEADER_BYTES_LENGTH ||
+                                sdesLength > packet.Length - offset)
+                            {
+                                consumed = offset;
+                                return false;
+                            }
                             offset += sdesLength;
                             break;
                         case (byte)RTCPReportTypesEnum.BYE:

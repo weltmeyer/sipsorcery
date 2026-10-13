@@ -21,6 +21,14 @@
     <Project Path="test/unit/SIPSorcery.UnitTests.csproj" />
     <Project Path="test/VideoCaptureTest/VideoCaptureTest.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/" />
+  <Folder Name="/benchmarks/SIPSorcery/">
+    <Project Path="benchmarks/SIPSorcery/IceBenchmarks/IceBenchmarks.csproj" />
+    <Project Path="benchmarks/SIPSorcery/SdpBenchmarks/SdpBenchmarks.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/SIPSorceryMedia.Abstractions/">
+    <Project Path="benchmarks/SIPSorceryMedia.Abstractions/PixelConverterBenchmarks/PixelConverterBenchmarks.csproj" />
+  </Folder>
   <Folder Name="/examples/">
     <Project Path="examples/sipcmdline/sipcmdline.csproj" />
     <Project Path="examples/StunServer/StunServer.csproj" />
